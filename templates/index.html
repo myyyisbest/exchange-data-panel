@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>汇率数据面板</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- ===== 顶部导航栏 ===== -->
+<nav class="topbar">
+    <div class="topbar-brand">
+        <span class="brand-icon" id="brand-icon">$</span>
+        <span class="brand-title">汇率数据面板</span>
+        <span class="brand-sub">多币种统一看板</span>
+    </div>
+    <div class="topbar-stats">
+        <div class="stat-item">
+            <span class="stat-label">最新日期</span>
+            <strong id="stat-latest-date" class="stat-value">--</strong>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-label">CNY / IDR / HKD</span>
+            <strong id="stat-total" class="stat-value">--</strong>
+            <span class="stat-unit">条</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-label">每日自动抓取</span>
+            <strong id="stat-crawl-time" class="stat-value">10:00</strong>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="topbar-actions">
+            <button class="btn-action btn-crawl" id="btn-crawl-today">
+                <span>↻</span> 抓取今日
+            </button>
+            <button class="btn-action btn-backfill" id="btn-backfill">
+                ⬇ 回填30天
+            </button>
+        </div>
+    </div>
+</nav>
+
+<!-- ===== 工具栏 ===== -->
+<div class="toolbar-wrap">
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <label class="toolbar-label">日期</label>
+            <button class="btn-toolbar btn-outline-sm" id="btn-day-prev" title="上一个交易日">◀</button>
+            <input type="date" class="toolbar-input" id="date-input">
+            <button class="btn-toolbar btn-outline-sm" id="btn-day-next" title="下一个交易日">▶</button>
+            <button class="btn-toolbar btn-primary-sm" id="btn-query-date">查询</button>
+            <button class="btn-toolbar btn-outline-sm" id="btn-query-latest">最新</button>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-group">
+            <label class="toolbar-label">基座筛选</label>
+            <div class="base-filter" id="base-filter">
+                <button class="btn-base active" data-base="">全部</button>
+                <button class="btn-base" data-base="CNY">CNY 人民币</button>
+                <button class="btn-base" data-base="IDR">IDR 印尼盾</button>
+                <button class="btn-base" data-base="HKD">HKD 港币</button>
+            </div>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-group">
+            <button class="btn-favorite-toggle" id="btn-favorite-toggle" type="button" aria-pressed="true" title="仅显示常用的 10 种币种">
+                <span class="fav-star">★</span>
+                <span class="fav-label">仅常用币种</span>
+                <span class="fav-count" id="fav-count"></span>
+            </button>
+        </div>
+        <div class="toolbar-spacer"></div>
+        <div class="toolbar-group">
+            <label class="toolbar-label">趋势天数</label>
+            <select class="toolbar-select" id="trend-days">
+                <option value="30" selected>近30天</option>
+                <option value="90">近90天</option>
+                <option value="180">近180天</option>
+                <option value="365">近1年</option>
+                <option value="1000">近4年</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 主内容区 ===== -->
+<div class="main-layout">
+
+    <!-- 左列：统一汇率表（CNY/IDR/HKD 合并） -->
+    <div class="panel panel-table">
+        <div class="panel-header">
+            <div class="panel-title">
+                <span class="panel-icon">📋</span>
+                <span id="table-title">统一汇率数据</span>
+            </div>
+            <div class="panel-date-badge" id="table-date-label">--</div>
+        </div>
+        <div class="panel-body p-0">
+            <table class="rates-table unified-table" id="rates-table">
+                <thead>
+                    <tr>
+                        <th class="col-no">#</th>
+                        <th class="col-base sortable" data-sort="base">货币 <span class="sort-icon">⇅</span></th>
+                        <th class="col-base-name">货币名称</th>
+                        <th class="col-target sortable" data-sort="target">相对方货币 <span class="sort-icon">⇅</span></th>
+                        <th class="col-target-name">相对方货币名称</th>
+                        <th class="col-method">标价方法</th>
+                        <th class="col-unit">单位</th>
+                        <th class="col-rate text-right sortable" data-sort="rate">
+                            汇率 <span class="sort-icon">⇅</span>
+                        </th>
+                        <th class="col-change text-right sortable" data-sort="change">
+                            涨跌额 <span class="sort-icon">⇅</span>
+                        </th>
+                        <th class="col-pct text-right sortable" data-sort="pct">
+                            涨跌幅 <span class="sort-icon">⇅</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="rates-tbody">
+                    <tr><td colspan="10" class="empty-hint">⌛ 加载数据中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="panel-footer">
+            <span class="footnote" id="table-footnote">
+                直接标价法：1 外币 = ? 本币（数据库原始单位为 100 的货币已归一化为 per 1）&nbsp;|&nbsp;
+                间接标价法：1 本币 = ? 外币
+            </span>
+        </div>
+    </div>
+
+    <!-- 右列：趋势图 + 历史 -->
+    <div class="panel-right">
+
+        <!-- 趋势图 -->
+        <div class="panel panel-chart">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-icon">📈</span>
+                    <span>汇率趋势分析</span>
+                </div>
+                <div class="chart-header-actions">
+                    <button class="btn-action btn-save-defaults" id="btn-save-defaults" title="将当前所选货币保存为该基座下的默认选项">
+                        <span>★</span> 保存为默认
+                    </button>
+                </div>
+            </div>
+            <div class="panel-body">
+                <!-- 输入货币（基座）选择 -->
+                <div class="trend-controls">
+                    <div class="trend-control-group">
+                        <span class="trend-control-label">输入货币</span>
+                        <div class="base-selector inline" id="trend-base-selector">
+                            <button class="btn-base active" data-base="CNY">CNY 人民币</button>
+                            <button class="btn-base" data-base="IDR">IDR 印尼盾</button>
+                            <button class="btn-base" data-base="HKD">HKD 港币</button>
+                        </div>
+                    </div>
+                    <div class="trend-control-group">
+                        <span class="trend-control-label">相对方货币 <small>（最多 5 个）</small></span>
+                        <div class="chart-currency-picker" id="currency-quick-pick">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="trend-chart"></canvas>
+                </div>
+                <div class="chart-selected" id="selected-currencies">
+                    <em class="text-muted">请在上方选择最多5种货币对比</em>
+                </div>
+            </div>
+        </div>
+
+        <!-- 历史记录 -->
+        <div class="panel panel-history">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-icon">🗓️</span>
+                    历史记录（CNY）
+                </div>
+                <small class="text-muted">点击日期加载</small>
+            </div>
+            <div class="panel-body">
+                <div id="history-list" class="history-grid">
+                    <em class="text-muted">加载中...</em>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Toast 提示 ===== -->
+<div id="toast-container"></div>
+
+<script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
+<script>
+    window.API_BASE = window.location.pathname.startsWith('/exchange/') ? '/exchange' : '';
+    window.CURRENCIES_META = {{ currencies_meta | tojson }};
+    window.SOURCES = {{ sources | tojson }};
+    window.BASE_NAMES = {{ base_names | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

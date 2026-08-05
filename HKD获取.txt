@@ -1,0 +1,208 @@
+完成！以下是成果摘要：
+
+---
+
+## ✅ 港元兑外币历史汇率已抓取完成
+
+**文件**: `hkd_exchange_rates_2022_2026.csv`（已保存到桌面）
+
+### 📊 数据概览
+
+| 项目 | 数值 |
+|------|------|
+| 总记录数 | **30,797 条** |
+| 货币种类 | **23 种** |
+| 交易日数 | **1,339 天** |
+| 日期范围 | **2022-01-03 ~ 2026-06-10** |
+| 文件大小 | ~1.5 MB |
+| 假日/周末 | 283 天（自动跳过） |
+
+### 💱 覆盖的 23 种货币
+
+AUD, BND, CAD, CHF, CNH, CNY, DKK, EUR, GBP, INR, JPY, MYR, NOK, NTD, NZD, PHP, PKR, SEK, SGD, THB, USD, WON, ZAR
+
+### 📈 数据样例 (2026-06-10)
+
+| Currency | Unit | 卖出价 | 电汇买入价 | 汇票买入价 |
+|----------|------|--------|-----------|-----------|
+| USD | 100 | 786.75 | 780.70 | 778.20 |
+| CNY | 100 | 117.00 | 114.45 | 114.45 |
+| JPY | 100 | 4.9860 | 4.7855 | 4.7740 |
+| EUR | 100 | 914.90 | 893.35 | 890.55 |
+| GBP | **1** | 10.560 | 10.400 | 10.345 |
+
+### 🔑 关键发现
+
+这次比印尼的简单多了——HKAB 有一个**完全公开的 REST API**：
+
+```
+GET https://www.hkab.org.hk/api/member/public/getExrate/2022-01-03
+```
+
+直接返回 JSON，大陆 IP 完全能访问，不需要翻墙也不需要浏览器自动化。我用 Playwright 打开页面拦截了一次网络请求就发现了这个接口，然后直接用 Python `requests` 逐天拉数据，11 分钟就全部跑完了。
+好的，其实很简单！给你详细拆解一下：
+
+## HKAB 汇率 API 调用方案
+
+### 🔍 API 发现过程
+
+我用 Playwright 浏览器打开 HKAB 页面后，拦截了页面的网络请求。当日期选择器切换到某个日期时，页面发了一个 AJAX 请求：
+
+```
+GET https://www.hkab.org.hk/api/member/public/getExrate/2022-01-03
+```
+
+这个 API **纯公开、无鉴权**，直接 GET 就能拿到 JSON。
+
+### 📡 API 详情
+
+**端点格式**：
+```
+GET https://www.hkab.org.hk/api/member/public/getExrate/{YYYY-MM-DD}
+```
+
+**示例**：
+```
+https://www.hkab.org.hk/api/member/public/getExrate/2022-01-03
+```
+
+**返回 JSON 结构**（关键字段）：
+```json
+{
+  "soFar": null,
+  "lastRate": {
+    "date": "2022-01-03",
+    "USDSelling": "7.7980",
+    "USDBuyingTT": "7.7930",
+    "USDBuyingOD": "7.7900",
+    "CNYSelling": "1.2245",
+    "CNYBuyingTT": "1.2195",
+    "CNYBuyingOD": "1.2150",
+    "GBPSelling": "10.5020",
+    "GBPBuyingTT": "10.4620",
+    "GBPBuyingOD": "10.4220",
+    ...
+    "holiday": "0"
+  }
+}
+```
+
+**字段命名规则**：
+- 卖出价：`{货币代码}Selling`
+- 电汇买入：`{货币代码}BuyingTT`
+- 汇票买入：`{货币代码}BuyingOD`
+- `holiday`：`"0"` = 交易日，非 `"0"` = 假日
+
+### 🐍 Python 调用代码
+
+```python
+import requests
+import json
+
+# 单日查询
+date_str = "2022-01-03"
+url = f"https://www.hkab.org.hk/api/member/public/getExrate/{date_str}"
+resp = requests.get(url)
+data = resp.json()
+
+# 汇率数据在 lastRate 里
+rates = data.get("lastRate", {})
+print(f"日期: {rates.get('date')}")
+print(f"USD 卖出价: {rates.get('USDSelling')}")
+print(f"CNY 卖出价: {rates.get('CNYSelling')}")
+print(f"是否假日: {rates.get('holiday')}")
+```
+
+### 📋 23 种货币的字段名
+
+我代码里维护了货币清单，用于从 JSON 里提取对应字段：
+
+```python
+CURRENCIES = [
+    ("AUD", "澳元"),
+    ("BND", "文莱元"),
+    ("CAD", "加元"),
+    ("CHF", "瑞郎"),
+    ("CNH", "离岸人民币"),
+    ("CNY", "人民币"),
+    ("DKK", "丹麦克朗"),
+    ("EUR", "欧元"),
+    ("GBP", "英镑"),      # 注意：单位是1，不是100！
+    ("INR", "印度卢比"),
+    ("JPY", "日元"),
+    ("MYR", "马来西亚林吉特"),
+    ("NOK", "挪威克朗"),
+    ("NTD", "新台币"),
+    ("NZD", "新西兰元"),
+    ("PHP", "菲律宾比索"),
+    ("PKR", "巴基斯坦卢比"),
+    ("SEK", "瑞典克朗"),
+    ("SGD", "新加坡元"),
+    ("THB", "泰铢"),
+    ("USD", "美元"),
+    ("WON", "韩元"),
+    ("ZAR", "南非兰特"),
+]
+# 对应 JSON 字段: {code}Selling, {code}BuyingTT, {code}BuyingOD
+```
+
+### ⚙️ 完整批量抓取逻辑
+
+```python
+import requests
+import csv
+from datetime import datetime, timedelta
+
+start = datetime(2022, 1, 1)
+end = datetime(2026, 6, 10)
+current = start
+records = []
+
+while current <= end:
+    date_str = current.strftime("%Y-%m-%d")
+    url = f"https://www.hkab.org.hk/api/member/public/getExrate/{date_str}"
+    
+    try:
+        resp = requests.get(url, timeout=30)
+        data = resp.json()
+        rates = data.get("lastRate", {})
+        
+        # 跳过假日
+        if rates.get("holiday") != "0":
+            current += timedelta(days=1)
+            continue
+        
+        # 提取每种货币
+        for code, name in CURRENCIES:
+            sell = rates.get(f"{code}Selling", "")
+            buy_tt = rates.get(f"{code}BuyingTT", "")
+            buy_dd = rates.get(f"{code}BuyingOD", "")
+            unit = "1" if code == "GBP" else "100"
+            
+            records.append([date_str, code, name, unit, sell, buy_tt, buy_dd])
+        
+    except Exception as e:
+        print(f"失败 {date_str}: {e}")
+    
+    current += timedelta(days=1)
+
+# 写入 CSV
+with open("hkd_rates.csv", "w", newline="", encoding="utf-8-sig") as f:
+    w = csv.writer(f)
+    w.writerow(["Date", "Currency_Code", "Currency", "Unit", "Selling", "Buying_TT", "Buying_DD"])
+    w.writerows(records)
+```
+
+### 🎯 关键点总结
+
+| 项目 | 说明 |
+|------|------|
+| **API 地址** | `https://www.hkab.org.hk/api/member/public/getExrate/{YYYY-MM-DD}` |
+| **鉴权** | 无，公开 API |
+| **频率限制** | 我没有遇到限制，但建议加 0.3s 延迟 |
+| **数据格式** | JSON，汇率字段用货币代码作为前缀 |
+| **假日处理** | `holiday` 字段判断，非 `"0"` 则跳过 |
+| **GBP 特殊** | 英镑单位是 1，其余货币单位是 100 |
+| **大陆 IP** | ✅ 直接可访问，无需特殊手段 |
+
+就是这么简单 —— 本质上就是一个无鉴权的 REST GET 接口，按天拼接 URL 逐日拉取就行。
