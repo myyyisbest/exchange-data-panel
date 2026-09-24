@@ -104,6 +104,35 @@ python backfill.py
 | POST | `/api/backfill` | 回填最近 N 天 |
 | GET / POST | `/api/preferences/<base>` | 用户趋势分析偏好 |
 
+
+## 新前端（Next.js）
+
+仓库内 `frontend/` 为 App Router + TypeScript + Tailwind 的暗色现代化界面，通过 **Next.js rewrites** 将浏览器同源请求 `/api/*` 代理到 Flask（默认 `http://127.0.0.1:41010`）。旧版 `templates/` + `static/` 仍由 Flask 直接提供，互不影响。
+
+### 本地运行
+
+```bash
+# 终端 1：Flask API（项目根目录）
+python app.py
+# → http://localhost:41010
+
+# 终端 2：Next.js 前端
+cd frontend
+cp .env.example .env.local   # 可选；修改 FLASK_API_ORIGIN
+npm install
+npm run dev
+# → http://localhost:3000
+```
+
+| 服务 | 默认端口 | 说明 |
+|------|----------|------|
+| Flask | `41010` | API + 旧版 Web 面板 |
+| Next.js | `3000` | 新前端；`/api/*` 代理到 Flask |
+
+环境变量见 `frontend/.env.example`（`FLASK_API_ORIGIN`）。**实时数据与手动抓取依赖 Flask 已启动**；仅启动 Next 时界面可打开，但接口会失败。
+
+V1 功能：多基座切换（CNY/IDR/HKD）、最新汇率表与涨跌幅、趋势图（选币种+区间）、多币种对比与常用币种过滤、手动抓取按钮、暗色主题。
+
 ## 项目结构
 
 ```
@@ -119,8 +148,9 @@ Exchange Data Panel/
 ├── import_bi_csv.py    # 印尼盾历史 CSV 导入
 ├── import_hkd_csv.py   # 港币历史 CSV 导入
 ├── download_assets.py  # 前端依赖下载工具
-├── templates/          # 页面模板
-├── static/             # 前端资源（CSS/JS）
+├── templates/          # 旧版页面模板（保留）
+├── static/             # 旧版前端资源（保留）
+├── frontend/           # Next.js 新前端（App Router）
 ├── requirements.txt
 ├── .env.example
 └── README.md

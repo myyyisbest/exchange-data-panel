@@ -17,3 +17,8 @@ data/
 # 运行日志
 *.log
 logs/
+
+# Frontend (Next.js)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
