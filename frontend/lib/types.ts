@@ -1,5 +1,5 @@
 /** 基座货币代码 */
-export type BaseCode = "CNY" | "IDR" | "HKD";
+export type BaseCode = "CNY" | "IDR" | "HKD" | "USD";
 
 export interface CurrencyMeta {
   code: string;
@@ -10,6 +10,8 @@ export interface CurrencyMeta {
 
 export interface SourceInfo {
   name: string;
+  price_type?: string | null;
+  price_type_en?: string | null;
   currency_count: number;
   currencies: string[];
   currency_meta: CurrencyMeta[];

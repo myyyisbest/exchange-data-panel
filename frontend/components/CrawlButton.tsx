@@ -57,7 +57,7 @@ export default function CrawlButton({ onDone, onToast }: Props) {
         className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-100 transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <span className={busy === "all" ? "animate-spin" : ""}>⟳</span>
-        {busy === "all" ? "抓取中..." : "抓取全部源"}
+        {busy === "all" ? "抓取中..." : "抓取全部源 (含 USD)"}
       </button>
     </div>
   );

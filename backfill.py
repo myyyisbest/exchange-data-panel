@@ -13,8 +13,8 @@ import scheduler
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='回填汇率历史数据')
     parser.add_argument('--days', type=int, default=30, help='回填天数（默认30）')
-    parser.add_argument('--source', type=str, default='CNY', choices=['CNY', 'IDR', 'HKD'],
-                        help='数据源：CNY(人民币)/IDR(印尼盾)/HKD(港币)，默认CNY')
+    parser.add_argument('--source', type=str, default='CNY', choices=['CNY', 'IDR', 'HKD', 'USD'],
+                        help='数据源：CNY/IDR/HKD/USD(Frankfurter)，默认CNY')
     args = parser.parse_args()
 
     database.init_db()

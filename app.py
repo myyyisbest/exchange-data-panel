@@ -22,6 +22,7 @@ import scheduler as sched_mod
 import scraper
 import scraper_bi
 import scraper_hkab
+import scraper_frankfurter
 
 # ----------- 配置（支持环境变量覆盖，便于容器化部署）-----------
 HOST = os.environ.get('APP_HOST', '0.0.0.0')
@@ -85,6 +86,8 @@ def api_sources():
     return jsonify({
         k: {
             'name': v['source_name'],
+            'price_type': v.get('price_type'),
+            'price_type_en': v.get('price_type_en'),
             'currency_count': len(v['currencies']),
             'currencies': [c[0] for c in v['currencies']],
             'currency_meta': [
@@ -224,7 +227,7 @@ def api_dates():
     return jsonify({'dates': database.list_dates(limit, base)})
 
 
-# ====== 统一视图（合并 CNY/IDR/HKD 三个基座）======
+# ====== 统一视图（合并 CNY/IDR/HKD/USD 各基座）======
 @app.route('/api/unified/latest')
 def api_unified_latest():
     """获取所有基座的最新数据，按行展开为统一表格"""
@@ -275,7 +278,7 @@ def api_crawl_all():
 
 @app.route('/api/backfill', methods=['POST'])
 def api_backfill():
-    """回填最近 N 天（仅 CNY 有效）"""
+    """回填最近 N 天（CNY / USD 等支持历史的源）"""
     body = request.get_json(silent=True) or {}
     days = int(body.get('days', 30))
     source = body.get('source', 'CNY').upper()
@@ -297,6 +300,8 @@ def api_debug_scrape():
         rows = scraper_bi.fetch(start)
     elif source == 'HKD':
         rows = scraper_hkab.fetch(start)
+    elif source == 'USD':
+        rows = scraper_frankfurter.fetch(start, end)
     else:
         return jsonify({'error': 'invalid source'}), 400
     return jsonify(rows)
@@ -357,11 +362,12 @@ def init_app():
 
     # 启动时跑一次回填（后台线程，不阻塞启动）
     def _backfill_async():
-        try:
-            result = sched_mod.backfill_recent(30, 'CNY')
-            logger.info(f'启动回填(CNY): {result}')
-        except Exception as e:
-            logger.error(f'启动回填失败: {e}')
+        for src in ('CNY', 'USD'):
+            try:
+                result = sched_mod.backfill_recent(30, src)
+                logger.info(f'启动回填({src}): {result}')
+            except Exception as e:
+                logger.error(f'启动回填({src})失败: {e}')
 
     threading.Thread(target=_backfill_async, daemon=True).start()
 

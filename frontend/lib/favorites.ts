@@ -18,18 +18,21 @@ export const BASE_DEFAULTS: Record<string, string[]> = {
   CNY: ["USD", "EUR", "JPY", "GBP", "AUD"],
   IDR: ["USD", "EUR", "JPY", "SGD", "AUD"],
   HKD: ["USD", "EUR", "JPY", "GBP", "AUD"],
+  USD: ["CNY", "EUR", "JPY", "HKD", "SGD"],
 };
 
 export const BASE_LABELS: Record<string, string> = {
   CNY: "人民币 CNY",
   IDR: "印尼盾 IDR",
   HKD: "港币 HKD",
+  USD: "美元 USD · 市场中间价",
 };
 
 export const BASE_ICONS: Record<string, string> = {
   CNY: "¥",
   IDR: "Rp",
   HKD: "HK$",
+  USD: "$",
 };
 
 export function loadFavoriteOnly(): boolean {

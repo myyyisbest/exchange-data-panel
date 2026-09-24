@@ -3,7 +3,7 @@
 import { BASE_ICONS, BASE_LABELS } from "@/lib/favorites";
 import type { BaseCode } from "@/lib/types";
 
-const BASES: Array<BaseCode | ""> = ["", "CNY", "IDR", "HKD"];
+const BASES: Array<BaseCode | ""> = ["", "CNY", "IDR", "HKD", "USD"];
 
 interface Props {
   value: BaseCode | "";
@@ -18,7 +18,7 @@ export default function BaseSwitcher({
   label = "基座筛选",
   allowAll = true,
 }: Props) {
-  const options = allowAll ? BASES : (["CNY", "IDR", "HKD"] as BaseCode[]);
+  const options = allowAll ? BASES : (["CNY", "IDR", "HKD", "USD"] as BaseCode[]);
 
   return (
     <div className="flex flex-wrap items-center gap-2">

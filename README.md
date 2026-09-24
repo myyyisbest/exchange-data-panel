@@ -4,13 +4,16 @@
 
 ## 简介
 
-本面板聚合三大官方数据源的汇率数据，统一存储于本地 SQLite，按「基座货币」组织：
+本面板聚合官方与市场参考汇率，统一存储于本地 SQLite，按「基座货币」组织：
 
 | 基座 | 数据源 | 货币数 | 价格类型 |
 |------|--------|--------|----------|
-| CNY（人民币） | 国家外汇管理局（SAFE） | 25 | 中间价 |
-| IDR（印尼盾） | Bank Indonesia（BI） | 26 | 卖出价 |
-| HKD（港币） | 香港银行公会（HKAB） | 23 | 卖出价 |
+| CNY（人民币） | 国家外汇管理局（SAFE） | 25 | 官方中间价 |
+| IDR（印尼盾） | Bank Indonesia（BI） | 26 | 官方卖出价 |
+| HKD（港币） | 香港银行公会（HKAB） | 23 | 官方卖出价 |
+| USD（美元） | Frankfurter | 49 | **市场参考中间价** |
+
+> **价格类型警告**：USD（Frankfurter）是多机构 blended **市场参考中间价**，与 SAFE 官方中间价、BI/HKAB 官方卖出价含义不同。**不要用绝对数值直接对比**「市场中间价 vs 官方中间价/卖出价」；跨基座请优先看相对涨跌或各自时间序列。
 
 核心能力：
 
@@ -81,8 +84,10 @@ python backfill.py
 | `CRAWL_HOUR` | `10` | 每日定时抓取小时（24 小时制） |
 | `CRAWL_MINUTE` | `0` | 每日定时抓取分钟 |
 | `DB_PATH` | 项目下 `data/exchange.db` | SQLite 数据库路径 |
+| `FRANKFURTER_BASE_URL` | `https://api.frankfurter.dev/v2` | Frankfurter API 根路径（含 `/v2`） |
+| `FRANKFURTER_PROVIDERS` | （空） | 可选，逗号分隔限定提供商；空=默认 blended |
 
-定时任务时区固定为 `Asia/Shanghai`（由 APScheduler 配置）。
+定时任务时区固定为 `Asia/Shanghai`（由 APScheduler 配置）。USD 与其它基座共用 `CRAWL_HOUR`/`CRAWL_MINUTE`。
 
 ## API 速览
 
@@ -131,7 +136,7 @@ npm run dev
 
 环境变量见 `frontend/.env.example`（`FLASK_API_ORIGIN`）。**实时数据与手动抓取依赖 Flask 已启动**；仅启动 Next 时界面可打开，但接口会失败。
 
-V1 功能：多基座切换（CNY/IDR/HKD）、最新汇率表与涨跌幅、趋势图（选币种+区间）、多币种对比与常用币种过滤、手动抓取按钮、暗色主题。
+V1 功能：多基座切换（CNY/IDR/HKD/USD）、最新汇率表与涨跌幅、趋势图（选币种+区间）、多币种对比与常用币种过滤、手动抓取按钮、暗色主题。USD 在界面中标注为 Frankfurter 市场中间价。
 
 ## 项目结构
 
@@ -142,6 +147,7 @@ Exchange Data Panel/
 ├── scraper.py          # CNY/SAFE 抓取器
 ├── scraper_bi.py       # IDR/BI 抓取器
 ├── scraper_hkab.py     # HKD/HKAB 抓取器
+├── scraper_frankfurter.py  # USD/Frankfurter 市场中间价抓取器
 ├── scheduler.py        # 定时调度与回填
 ├── backfill.py         # 回填脚本
 ├── import_excel.py     # 人民币历史 Excel 导入
@@ -169,6 +175,24 @@ A：设置环境变量 `CRAWL_HOUR` 与 `CRAWL_MINUTE`（见「配置」）。
 
 **Q：支持自定义基座货币吗？**
 A：基座货币由 `database.py` 的 `BASE_CONFIG` 定义，新增需配套抓取器与表结构。
+
+**Q：如何抓取 / 验证 USD（Frankfurter）？**
+A：
+```bash
+# 抓取今日（或区间）
+curl -X POST http://localhost:41010/api/crawl -H 'Content-Type: application/json' \
+  -d '{"source":"USD"}'
+# 或一并抓全部源
+curl -X POST http://localhost:41010/api/crawl-all
+# 回填近 30 天
+python backfill.py --source USD --days 30
+# 查看
+curl 'http://localhost:41010/api/latest?base=USD'
+curl 'http://localhost:41010/api/_debug/scrape?source=USD'
+```
+
+**Q：为什么 USD 数值和 SAFE/BI/HKAB 对不上？**
+A：价格类型不同（市场中间价 vs 官方中间价/卖出价），且口径、时段、提供商不同。请勿用绝对水平直接对比；可各自看涨跌趋势。
 
 **Q：数据库文件在哪？**
 A：默认在 `data/exchange.db`，可通过环境变量 `DB_PATH` 自定义。

@@ -4,10 +4,12 @@ SQLite 数据库模块（多币种基座版）
 - CNY: 25 种货币对人民币汇率中间价（国家外汇管理局）
 - IDR: 26 种货币对印尼盾卖出价（Bank Indonesia）
 - HKD: 23 种货币对港币卖出价（HKAB）
+- USD: 约 49 种货币对美元市场参考中间价（Frankfurter）
 
 字段说明:
   quote_method: 'direct' = 直接标价法(1外币=?本币), 'indirect' = 间接标价法(1本币=?外币)
   unit: 官网原始报价单位(1 或 100), 数据库中已归一化为 per 1
+  price_type: 官方中间价 / 官方卖出价 / 市场参考中间价（勿跨类型直接比绝对水平）
 """
 import json
 import sqlite3
@@ -112,22 +114,91 @@ CURRENCIES_HKD = [
     ('ZAR', '兰特',      'direct', 100),
 ]
 
+
+# ==================== USD 基座（Frankfurter 市场中间价）====================
+# Frankfurter v2 返回 1 USD = X quote；入库时取倒数 → 1 外币 = Y USD（与其它基座一致）
+# unit=1；全部直接标价法。价格类型为市场参考中间价，勿与 SAFE 中间价 / BI·HKAB 卖出价直接比绝对水平。
+CURRENCIES_USD = [
+    ('AED', '阿联酋迪拉姆', 'direct', 1),
+    ('AUD', '澳元',      'direct', 1),
+    ('BDT', '孟加拉塔卡', 'direct', 1),
+    ('BHD', '巴林第纳尔', 'direct', 1),
+    ('BND', '文莱元',    'direct', 1),
+    ('BRL', '巴西雷亚尔', 'direct', 1),
+    ('CAD', '加元',      'direct', 1),
+    ('CHF', '瑞士法郎',  'direct', 1),
+    ('CNH', '离岸人民币', 'direct', 1),
+    ('CNY', '人民币',    'direct', 1),
+    ('CZK', '捷克克朗',  'direct', 1),
+    ('DKK', '丹麦克朗',  'direct', 1),
+    ('EGP', '埃及镑',    'direct', 1),
+    ('EUR', '欧元',      'direct', 1),
+    ('FJD', '斐济元',    'direct', 1),
+    ('GBP', '英镑',      'direct', 1),
+    ('HKD', '港元',      'direct', 1),
+    ('HUF', '福林',      'direct', 1),
+    ('IDR', '印尼盾',    'direct', 1),
+    ('ILS', '以色列新谢克尔', 'direct', 1),
+    ('INR', '印度卢比',  'direct', 1),
+    ('JPY', '日元',      'direct', 1),
+    ('KHR', '柬埔寨瑞尔', 'direct', 1),
+    ('KRW', '韩元',      'direct', 1),
+    ('KWD', '科威特第纳尔', 'direct', 1),
+    ('LAK', '老挝基普',  'direct', 1),
+    ('LKR', '斯里兰卡卢比', 'direct', 1),
+    ('MMK', '缅甸元',    'direct', 1),
+    ('MOP', '澳门元',    'direct', 1),
+    ('MXN', '墨西哥比索', 'direct', 1),
+    ('MYR', '林吉特',    'direct', 1),
+    ('NOK', '挪威克朗',  'direct', 1),
+    ('NPR', '尼泊尔卢比', 'direct', 1),
+    ('NZD', '新西兰元',  'direct', 1),
+    ('OMR', '阿曼里亚尔', 'direct', 1),
+    ('PGK', '巴布亚新几内亚基那', 'direct', 1),
+    ('PHP', '菲律宾比索', 'direct', 1),
+    ('PKR', '巴基斯坦卢比', 'direct', 1),
+    ('PLN', '兹罗提',    'direct', 1),
+    ('QAR', '卡塔尔里亚尔', 'direct', 1),
+    ('RUB', '卢布',      'direct', 1),
+    ('SAR', '沙特里亚尔', 'direct', 1),
+    ('SEK', '瑞典克朗',  'direct', 1),
+    ('SGD', '新加坡元',  'direct', 1),
+    ('THB', '泰铢',      'direct', 1),
+    ('TRY', '里拉',      'direct', 1),
+    ('TWD', '新台币',    'direct', 1),
+    ('VND', '越南盾',    'direct', 1),
+    ('ZAR', '兰特',      'direct', 1),
+]
+
 # 统一注册表
 BASE_CONFIG = {
     'CNY': {
         'table': 'exchange_rates',
         'currencies': CURRENCIES_CNY,
         'source_name': '国家外汇管理局',
+        'price_type': '官方中间价',
+        'price_type_en': 'official_mid',
     },
     'IDR': {
         'table': 'exchange_rates_idr',
         'currencies': CURRENCIES_IDR,
         'source_name': 'Bank Indonesia',
+        'price_type': '官方卖出价',
+        'price_type_en': 'official_sell',
     },
     'HKD': {
         'table': 'exchange_rates_hkd',
         'currencies': CURRENCIES_HKD,
         'source_name': '香港银行公会',
+        'price_type': '官方卖出价',
+        'price_type_en': 'official_sell',
+    },
+    'USD': {
+        'table': 'exchange_rates_usd',
+        'currencies': CURRENCIES_USD,
+        'source_name': 'Frankfurter（市场中间价）',
+        'price_type': '市场参考中间价',
+        'price_type_en': 'market_mid',
     },
 }
 
@@ -136,6 +207,7 @@ BASE_NAMES = {
     'CNY': '人民币',
     'IDR': '印尼盾',
     'HKD': '港币',
+    'USD': '美元（市场中间价）',
 }
 
 # 报价方法中文标签
@@ -183,6 +255,10 @@ def init_db():
                 )
             ''')
             conn.execute(f'CREATE INDEX IF NOT EXISTS idx_{table}_date ON {table}(date)')
+            # 迁移：已有表补齐新增币种列（CREATE IF NOT EXISTS 不会改列）
+            for code, _, _, _ in cfg['currencies']:
+                if not _column_exists(conn, table, code):
+                    conn.execute(f'ALTER TABLE {table} ADD COLUMN {code} REAL')
 
         # 币种元数据表（报价方法 + 单位）
         conn.execute('''
@@ -271,7 +347,7 @@ def get_currency_meta_map(base: str = 'CNY') -> dict:
 def upsert_rates(date_str: str, rates: dict, base: str = 'CNY') -> int:
     """
     插入或更新某日数据
-    :param base: CNY / IDR / HKD
+    :param base: CNY / IDR / HKD / USD
     :return: 1=新插入或更新, 0=无变化
     """
     cfg = _get_config(base)

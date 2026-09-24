@@ -98,7 +98,7 @@ export default function Dashboard() {
             汇率数据面板
           </h1>
           <p className="mt-1 text-xs text-zinc-400">
-            SAFE / BI / HKAB · 多基座统一视图 · Next.js 前端
+            SAFE / BI / HKAB / Frankfurter · 多基座统一视图 · Next.js 前端
           </p>
           <p className="mt-2 font-mono text-[11px] text-zinc-500">{statsLine}</p>
           {Object.keys(baseDates).length > 0 && (
