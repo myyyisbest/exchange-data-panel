@@ -26,7 +26,7 @@ import scraper_frankfurter
 
 # ----------- 配置（支持环境变量覆盖，便于容器化部署）-----------
 HOST = os.environ.get('APP_HOST', '0.0.0.0')
-PORT = int(os.environ.get('APP_PORT', '41010'))
+PORT = int(os.environ.get('APP_PORT', '5000'))
 CRAWL_HOUR = int(os.environ.get('CRAWL_HOUR', '10'))
 CRAWL_MINUTE = int(os.environ.get('CRAWL_MINUTE', '0'))
 

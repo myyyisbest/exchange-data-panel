@@ -6,7 +6,7 @@
 
 ## 开发
 
-先启动 Flask（默认 `http://127.0.0.1:41010`），再：
+先启动 Flask（默认 `http://127.0.0.1:5000`），再：
 
 ```bash
 cd frontend
@@ -21,7 +21,7 @@ npm run dev
 
 | 变量 | 默认 | 说明 |
 |------|------|------|
-| `FLASK_API_ORIGIN` | `http://127.0.0.1:41010` | Next 服务端 rewrite 目标 |
+| `FLASK_API_ORIGIN` | `http://127.0.0.1:5000` | Next 服务端 rewrite 目标 |
 
 ## 构建
 

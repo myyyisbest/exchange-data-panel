@@ -73,7 +73,7 @@ export default function Dashboard() {
       setDateLabel(null);
       pushToast(
         e instanceof Error
-          ? `加载失败：${e.message}（请确认 Flask 已在 41010 端口运行）`
+          ? `加载失败：${e.message}（请确认 Flask 已在 5000 端口运行）`
           : "加载失败",
         "err"
       );
@@ -197,7 +197,7 @@ export default function Dashboard() {
 
         <footer className="pb-6 text-center text-[11px] text-zinc-600">
           API 经 Next.js 代理至 Flask（默认{" "}
-          <code className="text-zinc-500">http://127.0.0.1:41010</code>
+          <code className="text-zinc-500">http://127.0.0.1:5000</code>
           ）。旧版模板界面仍可由 Flask 直接提供。
         </footer>
       </div>

@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const flaskOrigin =
   process.env.FLASK_API_ORIGIN?.replace(/\/$/, "") ||
-  "http://127.0.0.1:41010";
+  "http://127.0.0.1:5000";
 
 const nextConfig: NextConfig = {
   async rewrites() {
