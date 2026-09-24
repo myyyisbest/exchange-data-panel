@@ -32,3 +32,23 @@ body {
 .font-mono {
   font-variant-numeric: tabular-nums;
 }
+
+/* 细微网格背景（仪表盘氛围） */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(39, 39, 42, 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(39, 39, 42, 0.35) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+  opacity: 0.4;
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}

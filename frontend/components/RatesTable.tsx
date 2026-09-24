@@ -13,6 +13,8 @@ interface Props {
   favoriteOnly: boolean;
   dateLabel?: string | null;
   loading?: boolean;
+  /** 详情页单基座时隐藏基座列 */
+  compactBase?: boolean;
 }
 
 export default function RatesTable({
@@ -21,6 +23,7 @@ export default function RatesTable({
   favoriteOnly,
   dateLabel,
   loading,
+  compactBase,
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey | null>("pct");
   const [sortDir, setSortDir] = useState<-1 | 1>(-1);
@@ -85,8 +88,10 @@ export default function RatesTable({
   const thClass =
     "cursor-pointer select-none whitespace-nowrap px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-400 hover:text-zinc-200";
 
+  const colSpan = compactBase ? 8 : 10;
+
   return (
-    <section className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 shadow-lg shadow-black/20">
+    <section className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60 shadow-lg shadow-black/20">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 px-4 py-3">
         <h2 className="text-sm font-semibold text-zinc-100">最新汇率</h2>
         <div className="text-xs text-zinc-400">
@@ -105,12 +110,16 @@ export default function RatesTable({
               <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-zinc-500">
                 #
               </th>
-              <th className={thClass} onClick={() => toggleSort("base")}>
-                基座 {sortIcon("base")}
-              </th>
-              <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-zinc-500">
-                基座名称
-              </th>
+              {!compactBase && (
+                <>
+                  <th className={thClass} onClick={() => toggleSort("base")}>
+                    基座 {sortIcon("base")}
+                  </th>
+                  <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-zinc-500">
+                    基座名称
+                  </th>
+                </>
+              )}
               <th className={thClass} onClick={() => toggleSort("target")}>
                 货币 {sortIcon("target")}
               </th>
@@ -145,18 +154,17 @@ export default function RatesTable({
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td
-                  colSpan={10}
-                  className="px-4 py-10 text-center text-zinc-500"
-                >
-                  加载中…
-                </td>
-              </tr>
+              Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i} className="border-t border-zinc-800/80">
+                  <td colSpan={colSpan} className="px-4 py-3">
+                    <div className="h-4 animate-pulse rounded bg-zinc-800/80" />
+                  </td>
+                </tr>
+              ))
             ) : display.length === 0 ? (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={colSpan}
                   className="px-4 py-10 text-center text-zinc-500"
                 >
                   {favoriteOnly
@@ -188,13 +196,18 @@ export default function RatesTable({
                     <td className="px-3 py-2 text-xs text-zinc-500">
                       {idx + 1}
                     </td>
-                    <td className="px-3 py-2">
-                      <span className="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-xs text-sky-300">
-                        {r.base}
-                      </span>
-                      {favMark}
-                    </td>
-                    <td className="px-3 py-2 text-zinc-400">{r.base_name}</td>
+                    {!compactBase && (
+                      <>
+                        <td className="px-3 py-2">
+                          <span className="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-xs text-sky-300">
+                            {r.base}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-zinc-400">
+                          {r.base_name}
+                        </td>
+                      </>
+                    )}
                     <td className="px-3 py-2 font-mono text-xs text-zinc-100">
                       {r.target}
                       {favMark}

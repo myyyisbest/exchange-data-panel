@@ -98,7 +98,7 @@ export default function TrendChart({
   }, [currencyMeta]);
 
   return (
-    <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 shadow-lg shadow-black/20">
+    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 shadow-lg shadow-black/20">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-zinc-100">趋势图</h2>

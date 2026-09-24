@@ -4,21 +4,29 @@ import { useCallback, useEffect, useState } from "react";
 import BaseSwitcher from "@/components/BaseSwitcher";
 import TrendChart from "@/components/TrendChart";
 import { getPreferences, getSources, savePreferences } from "@/lib/api";
-import { BASE_DEFAULTS } from "@/lib/favorites";
+import { BASE_DEFAULTS, BASE_META } from "@/lib/favorites";
 import type { BaseCode, CurrencyMeta, SourcesResponse } from "@/lib/types";
 
 interface Props {
   onToast?: (msg: string, type?: "ok" | "warn" | "err" | "info") => void;
+  /** 详情页锁定基座时传入；未传则面板内可切换 */
+  lockedBase?: BaseCode;
 }
 
-export default function ComparePanel({ onToast }: Props) {
+export default function ComparePanel({ onToast, lockedBase }: Props) {
   const [sources, setSources] = useState<SourcesResponse | null>(null);
-  const [trendBase, setTrendBase] = useState<BaseCode>("CNY");
-  const [selected, setSelected] = useState<string[]>(BASE_DEFAULTS.CNY);
+  const [trendBase, setTrendBase] = useState<BaseCode>(lockedBase || "CNY");
+  const [selected, setSelected] = useState<string[]>(
+    BASE_DEFAULTS[lockedBase || "CNY"] || BASE_DEFAULTS.CNY
+  );
   const [saving, setSaving] = useState(false);
 
-  const meta: CurrencyMeta[] =
-    sources?.[trendBase]?.currency_meta || [];
+  useEffect(() => {
+    if (lockedBase) setTrendBase(lockedBase);
+  }, [lockedBase]);
+
+  const meta: CurrencyMeta[] = sources?.[trendBase]?.currency_meta || [];
+  const baseMeta = BASE_META[trendBase];
 
   const applyDefaults = useCallback(
     (base: BaseCode, available: string[], prefs?: string[]) => {
@@ -26,7 +34,13 @@ export default function ComparePanel({ onToast }: Props) {
         (c) => available.includes(c)
       );
       const fromPref = (prefs || []).filter((c) => available.includes(c));
-      setSelected(fromPref.length ? fromPref : fallback.length ? fallback : available.slice(0, 5));
+      setSelected(
+        fromPref.length
+          ? fromPref
+          : fallback.length
+            ? fallback
+            : available.slice(0, 5)
+      );
     },
     []
   );
@@ -109,12 +123,13 @@ export default function ComparePanel({ onToast }: Props) {
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+    <section className="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 shadow-lg shadow-black/20">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-zinc-100">多币种对比</h2>
           <p className="mt-0.5 text-[11px] text-zinc-500">
-            选择输入基座与最多 5 个相对方货币，查看相对期初涨跌幅
+            选择最多 5 个相对方货币，查看相对期初涨跌幅
+            {baseMeta ? ` · ${baseMeta.priceType}` : ""}
           </p>
         </div>
         <button
@@ -127,14 +142,16 @@ export default function ComparePanel({ onToast }: Props) {
         </button>
       </div>
 
-      <BaseSwitcher
-        value={trendBase}
-        onChange={(b) => {
-          if (b) setTrendBase(b);
-        }}
-        label="趋势输入货币"
-        allowAll={false}
-      />
+      {!lockedBase && (
+        <BaseSwitcher
+          value={trendBase}
+          onChange={(b) => {
+            if (b) setTrendBase(b);
+          }}
+          label="趋势输入货币"
+          allowAll={false}
+        />
+      )}
 
       <div>
         <div className="mb-2 text-xs text-zinc-400">相对方货币（最多 5 个）</div>
