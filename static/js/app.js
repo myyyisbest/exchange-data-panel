@@ -1,7 +1,7 @@
 /**
  * 汇率数据面板 - 前端逻辑（统一视图版）
  *
- * 主表格：合并展示 CNY / IDR / HKD 三个基座的所有汇率对
+ * 主表格：合并展示 CNY / IDR / HKD / USD 各基座的所有汇率对
  * 趋势图：可选输入货币 + 最多 5 个相对方货币
  */
 
@@ -10,9 +10,10 @@ const BASE_DEFAULTS = {
     CNY: ['USD', 'EUR', 'JPY', 'GBP', 'AUD'],
     IDR: ['USD', 'EUR', 'JPY', 'SGD', 'AUD'],
     HKD: ['USD', 'EUR', 'JPY', 'GBP', 'AUD'],
+    USD: ['CNY', 'EUR', 'JPY', 'HKD', 'SGD'],
 };
 
-const BASE_ICONS = { CNY: '¥', IDR: 'Rp', HKD: 'HK$' };
+const BASE_ICONS = { CNY: '¥', IDR: 'Rp', HKD: 'HK$', USD: '$' };
 
 // 常用币种（10 个）：AED/CNY/EUR/GBP/HKD/IDR/JPY/KRW/SGD/USD
 // 出现在主表格行的 base 或 target 中时算"常用"
